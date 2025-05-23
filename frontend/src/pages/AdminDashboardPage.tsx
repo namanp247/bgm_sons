@@ -255,7 +255,7 @@ const AdminDashboardPage = () => {
                           <div className="flex items-start">
                             <div className="flex flex-col items-center mr-6">
                               <div className="flex flex-row gap-2 mb-2">
-                                {product.images.map((img, i) => (
+                                {(product.images || []).map((img, i) => (
                                   <img
                                     key={i}
                                     className="h-16 w-16 rounded-md object-cover border border-gray-200"

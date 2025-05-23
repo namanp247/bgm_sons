@@ -39,6 +39,7 @@ useEffect(() => {
          const data = await res.json();
         if (!controller.signal.aborted) setProduct(data);
        } catch (err: any) {
+         if (err.name === "AbortError") return; // Ignore abort errors
          setError(err.message || 'Error loading product');
        } finally {
         if (!controller.signal.aborted) setLoading(false);

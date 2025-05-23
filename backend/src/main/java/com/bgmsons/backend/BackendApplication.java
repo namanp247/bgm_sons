@@ -22,6 +22,8 @@ public class BackendApplication {
         FilterRegistrationBean<AuthMiddleware> registrationBean = new FilterRegistrationBean<>();
         registrationBean.setFilter(authMiddleware);
         registrationBean.addUrlPatterns("/api/admin/*");
+        registrationBean.addUrlPatterns("/api/products");
+        registrationBean.addUrlPatterns("/api/products/*");
         registrationBean.setOrder(1);
         return registrationBean;
     }

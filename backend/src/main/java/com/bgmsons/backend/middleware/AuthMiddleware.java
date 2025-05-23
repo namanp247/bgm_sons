@@ -16,8 +16,14 @@ public class AuthMiddleware extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         String path = request.getRequestURI();
+        String method = request.getMethod();
         // Allow login, signup, and verify endpoints without auth
         if (path.equals("/api/admin/login") || path.equals("/api/admin/signup") || path.equals("/api/admin/verify")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+        // Allow GET requests to /api/products and /api/products/{id} without auth
+        if (path.matches("^/api/products(/[^/]+)?$") && method.equals("GET")) {
             filterChain.doFilter(request, response);
             return;
         }
