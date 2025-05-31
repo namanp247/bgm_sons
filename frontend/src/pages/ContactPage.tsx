@@ -45,7 +45,6 @@ const ContactPage = () => {
       [name]: value
     }));
     
-    // Clear error when field is being edited
     if (formErrors[name]) {
       setFormErrors(prev => ({
         ...prev,
@@ -90,11 +89,15 @@ const ContactPage = () => {
     setSubmitError('');
     
     try {
-      // In a real application, you would send the form data to a backend API
-      // This is a simulation for demo purposes
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Simulate successful submission
+
+      const res = await fetch(`/api/mail/send-enquiry`,{
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json'},
+        body: JSON.stringify({...formData}),
+      });
+
+      if(!res.ok) throw new Error('Failed to send inquiry');
+
       setSubmitSuccess(true);
       setFormData({
         name: '',

@@ -19,14 +19,17 @@ const ProductDetailsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Enquiry form state
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+
   const [form, setForm] = useState({
     name: '',
     email: '',
     phone: '',
     message: '',
   });
-  const [submitted, setSubmitted] = useState(false);
 
 useEffect(() => {
     const fetchProduct = async () => {
@@ -46,16 +49,65 @@ useEffect(() => {
     if (id) fetchProduct();
    }, [id]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+    
+    if (!form.name.trim()) {
+      errors.name = 'Name is required';
+    }
+    
+    if (!form.email.trim()) {
+      errors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(form.email)) {
+      errors.email = 'Email address is invalid';
+    }
+    
+    if (!form.message.trim()) {
+      errors.message = 'Message is required';
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+
+    if(formErrors[name]) {
+      setFormErrors({ ...formErrors, [name]: '' });
+    }
+
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // For now, just log the enquiry
-    console.log('Enquiry submitted:', form);
-    setSubmitted(true);
-    setForm({ name: '', email: '', phone: '', message: '' });
+
+    if(!validateForm()){
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError('');
+
+    try {
+      
+      const res = await fetch(`/api/mail/send-product-enquiry`,{
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({...form, "productId": id}),
+      });
+
+      if(!res.ok) throw new Error('Failed to send product enquiry');
+
+      setSubmitted(true);
+      setForm({ name: '', email: '', phone: '', message: '' });
+
+    } catch (error) {
+      setSubmitError('There was a problem submitting your inquiry. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (loading) return <div className="container mx-auto px-4 py-16 text-center text-xl">Loading...</div>;
@@ -106,7 +158,7 @@ useEffect(() => {
               <div className="mb-4">
                 <h2 className="text-lg font-bold text-blue-900 mb-1">Specifications</h2>
                 <div className="text-gray-700 whitespace-pre-line">{product.specification}</div>
-              </div>
+</div>
             )}
           </div>
         </div>
@@ -118,6 +170,11 @@ useEffect(() => {
           <div className="text-green-700 font-semibold text-lg">Thank you! We have received your enquiry.</div>
         ) : (
           <form className="grid grid-cols-1 gap-6" onSubmit={handleSubmit}>
+            {submitError && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                {submitError}
+              </div>
+            )}
             <div>
               <label className="block text-gray-700 font-semibold mb-1" htmlFor="name">Name</label>
               <input
@@ -126,9 +183,13 @@ useEffect(() => {
                 name="name"
                 value={form.name}
                 onChange={handleChange}
-                required
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className={`w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  formErrors.name ? 'border-red-400' : 'border-gray-300'
+                }`}
               />
+              {formErrors.name && (
+                <p className="text-red-500 text-sm mt-1">{formErrors.name}</p>
+              )}
             </div>
             <div>
               <label className="block text-gray-700 font-semibold mb-1" htmlFor="email">Email</label>
@@ -138,9 +199,13 @@ useEffect(() => {
                 name="email"
                 value={form.email}
                 onChange={handleChange}
-                required
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className={`w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  formErrors.email ? 'border-red-400' : 'border-gray-300'
+                }`}
               />
+              {formErrors.email && (
+                <p className="text-red-500 text-sm mt-1">{formErrors.email}</p>
+              )}
             </div>
             <div>
               <label className="block text-gray-700 font-semibold mb-1" htmlFor="phone">Phone</label>
@@ -161,15 +226,22 @@ useEffect(() => {
                 value={form.message}
                 onChange={handleChange}
                 rows={4}
-                required
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className={`w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  formErrors.message ? 'border-red-400' : 'border-gray-300'
+                }`}
               />
+              {formErrors.message && (
+                <p className="text-red-500 text-sm mt-1">{formErrors.message}</p>
+              )}
             </div>
             <button
               type="submit"
-              className="bg-blue-900 hover:bg-blue-800 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-transform duration-300 hover:-translate-y-1 hover:scale-105"
-            >
-              Submit Enquiry
+              disabled={isSubmitting}
+              className={`bg-blue-900 hover:bg-blue-800 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-transform duration-300 hover:-translate-y-1 hover:scale-105 ${
+              isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
+              }`}
+              >
+              {isSubmitting ? 'Sending...' : 'Send Enquiry'}
             </button>
           </form>
         )}
